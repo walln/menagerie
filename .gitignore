@@ -1,0 +1,7 @@
+logs
+lightning_logs
+__pycache__
+.venv
+.ruff_cache
+.pytest_cache
+data
