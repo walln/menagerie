@@ -81,44 +81,15 @@ def train(
 ):
     """Train the model."""
     for epoch in range(epochs):
-        model.train()
         start_time = time.perf_counter()
-        with Progress(*progress_columns, transient=True) as progress:
-            train_acc = Accuracy(task="multiclass", num_classes=num_classes).to(
-                fabric.device
-            )
-            for _, batch in progress.track(
-                enumerate(train_dataloader),
-                description="[purple]Training",
-                total=len(train_dataloader),
-            ):
-                image, target = batch
-
-                optimizer.zero_grad()
-                logits = model(image)
-                loss = cross_entropy(logits, target)
-                fabric.backward(loss)
-                optimizer.step()
-
-                with torch.no_grad():
-                    train_acc(logits, target)
-
-                fabric.log("train_loss", loss)
-                fabric.log("train_acc", train_acc.compute())
-
-                if log_wandb:
-                    wandb.log({"train_loss": loss, "train_acc": train_acc.compute()})
-
-            lr_scheduler.step()
-            train_acc.reset()
-
-            if log_wandb:
-                wandb.log({"lr": lr_scheduler.get_last_lr()[0]})
-
+        train_epoch(fabric, model, optimizer, train_dataloader)
+        lr_scheduler.step()
         end_time = time.perf_counter()
         console.log(
             f"Completed Training Epoch: {epoch} in {(end_time - start_time):.4f}s"
         )
+        if log_wandb:
+            wandb.log({"lr": lr_scheduler.get_last_lr()[0]})
 
         # Validate an epoch
         start_time = time.perf_counter()
@@ -129,6 +100,40 @@ def train(
         )
 
 
+def train_epoch(
+    fabric: Fabric,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    train_dataloader: DataLoader,
+):
+    """Train an epoch."""
+    model.train()
+    with Progress(*progress_columns, transient=True) as progress:
+        train_acc = Accuracy(task="multiclass", num_classes=num_classes).to(
+            fabric.device
+        )
+        for batch in progress.track(
+            train_dataloader,
+            description="[purple]Training",
+            total=len(train_dataloader),
+        ):
+            image, target = batch
+
+            optimizer.zero_grad()
+            logits = model(image)
+            loss = cross_entropy(logits, target)
+            fabric.backward(loss)
+            optimizer.step()
+
+            with torch.no_grad():
+                batch_acc = train_acc(logits, target)
+
+            fabric.log("train_loss", loss)
+            fabric.log("train_acc", batch_acc)
+        train_acc.reset()
+
+
+@torch.no_grad()
 def validate_epoch(
     fabric: Fabric,
     model: torch.nn.Module,
@@ -142,23 +147,22 @@ def validate_epoch(
         valid_acc = Accuracy(task="multiclass", num_classes=num_classes).to(
             fabric.device
         )
-        for _, batch in progress.track(
-            enumerate(valid_dataloader),
+        for batch in progress.track(
+            valid_dataloader,
             description="[purple]Validating",
             total=len(valid_dataloader),
         ):
             image, target = batch
 
-            with torch.no_grad():
-                logits = model(image)
-                loss = cross_entropy(logits, target)
-                valid_acc(logits, target)
+            logits = model(image)
+            loss = cross_entropy(logits, target)
+            batch_acc = valid_acc(logits, target)
 
             fabric.log("valid_loss", loss)
-            fabric.log("valid_acc", valid_acc.compute())
+            fabric.log("valid_acc", batch_acc)
 
             if log_wandb:
-                wandb.log({"valid_loss": loss, "valid_acc": valid_acc.compute()})
+                wandb.log({"valid_loss": loss, "valid_acc": batch_acc})
 
         valid_acc.reset()
 
