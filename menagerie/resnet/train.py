@@ -7,8 +7,7 @@ import torch
 import typer
 import wandb
 from lightning import Fabric, seed_everything
-from rich.console import Console
-from rich.progress import MofNCompleteColumn, Progress, SpinnerColumn
+from rich.progress import Progress
 from torch.nn.functional import cross_entropy
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LRScheduler, OneCycleLR
@@ -21,7 +20,9 @@ from menagerie.datasets.tiny_imagenet import (
     create_validation_dataset,
     tiny_imagenet_collator,
 )
+from menagerie.datasets.utils import sanity_check_data
 from menagerie.resnet.model import ResNet18
+from menagerie.utils.console import console, progress_columns
 
 # Ignore deprecation warnings this will be fixed in torch 2.2
 warnings.filterwarnings(
@@ -42,30 +43,8 @@ warnings.filterwarnings(
 )
 
 
-progress_columns = [
-    SpinnerColumn(),
-    *Progress.get_default_columns(),
-    MofNCompleteColumn(),
-]
-
 num_classes = 200
 num_workers = 4
-
-console = Console()
-
-
-def sanity_check_data(train_dataloader: DataLoader, valid_dataloader: DataLoader):
-    """Sanity check the data."""
-    with Progress(*progress_columns) as progress:
-        for _ in progress.track(
-            train_dataloader, description="[purple]Training Data Sanity Check"
-        ):
-            pass
-
-        for _ in progress.track(
-            valid_dataloader, description="[purple]Validation Data Sanity Check"
-        ):
-            pass
 
 
 def train(
