@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import typer
 import wandb
 from lightning import Fabric, seed_everything
-from menagerie.datasets.utils import sanity_check_data
 from menagerie.datasets.wikitext import (
     create_train_dataset,
     create_validation_dataset,
@@ -23,17 +22,19 @@ from typing_extensions import Annotated
 num_workers = 1
 
 
+# TODO: do global steps and validate every instead of epochs.
 def main(
-    epochs: Annotated[int, typer.Option(help="number of epochs to train")] = 150,
-    batch_size: Annotated[
-        int, typer.Option(help="input batch size for training")
-    ] = 128,
+    epochs: Annotated[int, typer.Option(help="number of epochs to train")] = 1,
+    batch_size: Annotated[int, typer.Option(help="input batch size for training")] = 1,
     lr: Annotated[float, typer.Option(help="learning rate")] = 1e-1,
     seed: Annotated[int, typer.Option(help="random seed")] = 42,
     save_model: Annotated[
         bool, typer.Option(help="Save the model after training")
     ] = False,
     log_wandb: Annotated[bool, typer.Option(help="Log to wandb")] = True,
+    accumulation_steps: Annotated[
+        int, typer.Option(help="Accumulate gradients across batches")
+    ] = 8,
 ):
     """Train a simple transformer model on wikitext."""
     if log_wandb:
@@ -58,6 +59,7 @@ def main(
     print("seed:", seed)
     print("save_model:", save_model)
     print("log_wandb:", log_wandb)
+    print("accumulation_steps:", accumulation_steps)
 
     torch.set_float32_matmul_precision("medium")
     seed_everything(seed)
@@ -68,6 +70,11 @@ def main(
     console.log("Creating model")
     with fabric.init_module():
         model = Transformer()
+
+    # Display parameter count and estimate memory usage
+    params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    console.log(f"Model has {params:,} trainable parameters")
+    console.log(f"Estimated memory usage: {params * 4 / 1024 / 1024:.2f} MB")
 
     optimizer = Adam(model.parameters(), lr=lr)
 
@@ -112,7 +119,7 @@ def main(
     )
 
     console.log("Sanity checking data")
-    sanity_check_data(train_dataloader, valid_dataloader)
+    # sanity_check_data(train_dataloader, valid_dataloader)
 
     console.rule("[bold purple]Beginning training run")
 
@@ -126,6 +133,7 @@ def main(
         valid_dataloader,
         epochs,
         log_wandb=log_wandb,
+        accumulation_steps=accumulation_steps,
     )
     end_time = time.perf_counter()
 
@@ -133,7 +141,7 @@ def main(
     if save_model:
         console.log("Saving model")
         fabric.save(
-            "checkpoints/resnet18.ckpt",
+            "checkpoints/pretrained_transformer.ckpt",
             {"model": model, "optimizer": optimizer, "scheduler": scheduler},
         )
         console.rule()
@@ -151,12 +159,20 @@ def train(
     epochs: int,
     *,
     log_wandb: bool = True,
+    accumulation_steps: int = 8,
 ):
     """Train the model."""
     for epoch in range(epochs):
         start_time = time.perf_counter()
-        train_epoch(fabric, model, optimizer, train_dataloader)
-        lr_scheduler.step()
+        train_epoch(
+            fabric,
+            model,
+            optimizer,
+            train_dataloader,
+            lr_scheduler,
+            log_wandb=log_wandb,
+            accumulation_steps=accumulation_steps,
+        )
         end_time = time.perf_counter()
         console.log(
             f"Completed Training Epoch: {epoch} in {(end_time - start_time):.4f}s"
@@ -178,24 +194,44 @@ def train_epoch(
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     train_dataloader: DataLoader,
+    scheduler: LRScheduler,
+    *,
+    log_wandb: bool = True,
+    accumulation_steps: int = 8,
 ):
     """Train an epoch."""
     model.train()
+    average_train_loss = 0.0
     with Progress(*progress_columns, transient=True) as progress:
-        for batch in progress.track(
-            train_dataloader,
+        for iteration, batch in progress.track(
+            enumerate(train_dataloader),
             description="[purple]Training",
             total=len(train_dataloader),
         ):
+            is_accumulating = iteration % accumulation_steps != 0
+
             input, target = batch
 
-            optimizer.zero_grad()
-            logits = model(input, target)
-            loss = F.nll_loss(logits, target.view(-1))
-            fabric.backward(loss)
-            optimizer.step()
+            with fabric.no_backward_sync(model, enabled=is_accumulating):  # type: ignore [wrapped module]
+                logits = model(input, target)
+                loss = F.cross_entropy(
+                    logits.view(-1, logits.size(-1)), target.view(-1)
+                )
+                if log_wandb:
+                    wandb.log({"train_loss": loss.item()})
+                fabric.log("train_loss", loss)
+                average_train_loss += loss.item()
+                fabric.backward(loss)
 
-            fabric.log("train_loss", loss)
+            if not is_accumulating:
+                # step the optimizer after accumulating gradients
+                optimizer.step()
+                optimizer.zero_grad()
+
+                fabric.log("train_loss", average_train_loss / accumulation_steps)
+                average_train_loss = 0.0
+
+            scheduler.step()
 
 
 @torch.no_grad()
@@ -218,7 +254,7 @@ def validate_epoch(
             input, target = batch
 
             logits = model(input, target)
-            loss = F.nll_loss(logits, target.view(-1))
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), target.view(-1))
             losses[i] = loss.item()
 
             fabric.log("valid_loss", loss)
