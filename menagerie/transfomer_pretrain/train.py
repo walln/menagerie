@@ -64,9 +64,10 @@ def main(
     torch.set_float32_matmul_precision("medium")
     seed_everything(seed)
 
-    fabric = Fabric(precision="16-mixed")
+    fabric = Fabric(precision="bf16-mixed")
     fabric.launch()
     console.rule("[bold purple]Creating fabric environment")
+    console.log("Utilizing", fabric.device.type, "device")
     console.log("Creating model")
     with fabric.init_module():
         model = Transformer()
