@@ -6,11 +6,7 @@ import torch.nn.functional as F
 import typer
 import wandb
 from lightning import Fabric, seed_everything
-from menagerie.datasets.wikitext import (
-    create_train_dataset,
-    create_validation_dataset,
-    wikitext_collator,
-)
+from menagerie.datasets.code_parrot import create_datasets
 from menagerie.transfomer_pretrain.model import Transformer
 from menagerie.utils.console import console, progress_columns
 from rich.progress import Progress
@@ -53,6 +49,8 @@ def main(
     console.rule(
         "[bold purple]Configuring training run for a simple Transformer on Wikitext"
     )
+    context_length = 128
+    print("context_length:", context_length)
     print("epochs:", epochs)
     print("batch_size:", batch_size)
     print("lr:", lr)
@@ -67,10 +65,39 @@ def main(
     fabric = Fabric(precision="bf16-mixed")
     fabric.launch()
     console.rule("[bold purple]Creating fabric environment")
+    console.log("Loading dataset")
+    with fabric.rank_zero_first(local=False):
+        datasets, tokenizer, data_collator = create_datasets(
+            seed=seed, context_length=context_length
+        )
+        train_dataset = datasets["train"]
+        valid_dataset = datasets["valid"]
+
+    console.log("Creating dataloaders")
+    train_dataloader = DataLoader(
+        train_dataset,  # type: ignore [HF Dataset]
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        collate_fn=data_collator,
+        pin_memory=torch.cuda.is_available(),
+    )
+    valid_dataloader = DataLoader(
+        valid_dataset,  # type: ignore [HF Dataset]
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        collate_fn=data_collator,
+        pin_memory=torch.cuda.is_available(),
+    )
+
+    train_dataloader, valid_dataloader = fabric.setup_dataloaders(
+        train_dataloader, valid_dataloader
+    )
     console.log("Utilizing", fabric.device.type, "device")
     console.log("Creating model")
     with fabric.init_module():
-        model = Transformer()
+        model = Transformer(vocab_size=len(tokenizer))
 
     # Display parameter count and estimate memory usage
     params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -83,33 +110,6 @@ def main(
     # ordering [https://github.com/Lightning-AI/pytorch-lightning/pull/19192]
     # model = torch.compile(model)
     model, optimizer = fabric.setup(model, optimizer)
-
-    console.log("Loading dataset")
-    with fabric.rank_zero_first(local=False):
-        train_dataset = create_train_dataset()
-        valid_dataset = create_validation_dataset()
-
-    console.log("Creating dataloaders")
-    train_dataloader = DataLoader(
-        train_dataset,  # type: ignore [HF Dataset]
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=num_workers,
-        collate_fn=wikitext_collator,
-        pin_memory=torch.cuda.is_available(),
-    )
-    valid_dataloader = DataLoader(
-        valid_dataset,  # type: ignore [HF Dataset]
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        collate_fn=wikitext_collator,
-        pin_memory=torch.cuda.is_available(),
-    )
-
-    train_dataloader, valid_dataloader = fabric.setup_dataloaders(
-        train_dataloader, valid_dataloader
-    )
 
     console.log("Creating LR scheduler")
     scheduler = OneCycleLR(
@@ -211,7 +211,9 @@ def train_epoch(
         ):
             is_accumulating = iteration % accumulation_steps != 0
 
-            input, target = batch
+            input, target = batch["input_ids"], batch["labels"]
+            input = input.to(fabric.device)
+            target = target.to(fabric.device)
 
             with fabric.no_backward_sync(model, enabled=is_accumulating):  # type: ignore [wrapped module]
                 logits = model(input, target)
@@ -252,7 +254,9 @@ def validate_epoch(
             description="[purple]Validating",
             total=len(valid_dataloader),
         ):
-            input, target = batch
+            input, target = batch["input_ids"], batch["labels"]
+            input = input.to(fabric.device)
+            target = target.to(fabric.device)
 
             logits = model(input, target)
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), target.view(-1))
