@@ -1,13 +1,8 @@
 """ResNet [https://arxiv.org/abs/1512.03385] implemented in PyTorch."""
-from typing import Dict, Tuple
 
-import lightning as pl
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from torch.optim import Adam
-from torchmetrics import Accuracy
 
 
 class BasicBlock(nn.Module):
@@ -168,7 +163,7 @@ class Bottleneck(nn.Module):
         return out
 
 
-class ResNetModel(nn.Module):
+class ResNet(nn.Module):
     """The ResNet architecture.
 
     Attributes:
@@ -252,120 +247,6 @@ class ResNetModel(nn.Module):
         out = self.linear(out)
 
         return out
-
-
-class ResNet(pl.LightningModule):
-    """The ResNet architecture implemented as a PyTorch Lightning Module.
-
-    Attributes:
-        model (nn.Module): The internal ResNet model.
-        learning_rate (float): Learning rate for the optimizer.
-
-    Methods:
-        forward: Performs a forward pass through the network.
-        training_step: Processes a single training batch.
-        validation_step: Processes a single batch on the validation set.
-        test_step: Processes a single batch on the test set.
-        configure_optimizers: Configures the optimizers.
-    """
-
-    def __init__(self, block, num_blocks, num_classes=10, learning_rate=1e-3):
-        """Initializes the ResNet module.
-
-        Args:
-            block (nn.Module): The type of block to use (BasicBlock or Bottleneck).
-            num_blocks (list of int): Number of blocks in each layer.
-            num_classes (int): Number of classes for classification.
-            learning_rate (float): Learning rate for the optimizer.
-        """
-        super().__init__()
-        self.model = ResNetModel(block, num_blocks, num_classes)
-        self.loss_function = F.cross_entropy
-        self.learning_rate = learning_rate
-        self.train_accuracy = Accuracy("multiclass", num_classes=num_classes)
-        self.val_accuracy = Accuracy("multiclass", num_classes=num_classes)
-
-    def forward(self, x: Tensor) -> Tensor:
-        """Performs a forward pass through the network.
-
-        Args:
-            x (Tensor): Input tensor.
-
-        Returns:
-            Tensor: Output tensor from the network.
-        """
-        return self.model(x)
-
-    def training_step(self, batch: Dict, batch_idx: int) -> Tensor:
-        """Processes a single training batch.
-
-        Args:
-            batch (tuple): A tuple containing input data and labels.
-            batch_idx (int): The index of the batch.
-
-        Returns:
-            Tensor: The loss for the batch.
-        """
-        x, y = batch["image"], batch["label"]
-        logits = self.forward(x)
-        loss = self.loss_function(logits, y)
-
-        preds = torch.argmax(logits, dim=1)
-        self.train_accuracy(preds, y)
-        self.log(
-            "train_accuracy",
-            self.train_accuracy,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-            logger=True,
-        )
-
-        return loss
-
-    def validation_step(self, batch: Dict, batch_idx: int):
-        """Processes a single batch on the validation set.
-
-        Args:
-            batch (tuple): A tuple containing input data and labels.
-            batch_idx (int): The index of the batch.
-        """
-        x, y = batch["image"], batch["label"]
-        logits = self.forward(x)
-        loss = self.loss_function(logits, y)
-
-        preds = torch.argmax(logits, dim=1)
-        self.val_accuracy(preds, y)
-        self.log(
-            "val_accuracy",
-            self.val_accuracy,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-            logger=True,
-        )
-        self.log("val_loss", loss)
-
-    def test_step(self, batch: Tuple, batch_idx: int):
-        """Processes a single batch on the test set.
-
-        Args:
-            batch (tuple): A tuple containing input data and labels.
-            batch_idx (int): The index of the batch.
-        """
-        x, y = batch
-        logits = self.forward(x)
-        loss = self.loss_function(logits, y)
-        self.log("test_loss", loss)
-
-    def configure_optimizers(self):
-        """Configures the optimizers (and optionally learning rate schedulers).
-
-        Returns:
-            torch.optim.Optimizer: The optimizer for the model.
-        """
-        optimizer = Adam(self.model.parameters(), lr=self.learning_rate)
-        return optimizer
 
 
 def ResNet18(classes: int = 10) -> ResNet:
