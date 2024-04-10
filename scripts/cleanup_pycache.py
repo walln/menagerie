@@ -1,4 +1,5 @@
 """Delete all cache directories in the current directory."""
+
 import os
 import shutil
 

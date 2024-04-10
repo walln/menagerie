@@ -1,5 +1,7 @@
 """Pretrain a transfomer model on wikitext."""
+
 import time
+from typing import Annotated
 
 import torch
 import torch.nn.functional as F
@@ -13,7 +15,6 @@ from rich.progress import Progress
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LRScheduler, OneCycleLR
 from torch.utils.data.dataloader import DataLoader
-from typing_extensions import Annotated
 
 num_workers = 1
 

@@ -1,5 +1,4 @@
 """Wikitext dataset [https://huggingface.co/datasets/wikitext]."""
-from typing import Dict
 
 import torch
 from transformers import AutoTokenizer
@@ -14,7 +13,7 @@ _tokenizer_name = "bert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(_tokenizer_name)
 
 
-def _filter(row: Dict):
+def _filter(row: dict):
     if row["text"] == "":
         return False
     return True

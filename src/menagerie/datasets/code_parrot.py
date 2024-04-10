@@ -53,7 +53,9 @@ def create_datasets(context_length=128, seed=42, *, sanity_check_data: bool = Fa
             return_length=True,
         )
         input_batch = []
-        for length, input_ids in zip(outputs["length"], outputs["input_ids"]):  # type: ignore
+        for length, input_ids in zip(
+            outputs["length"], outputs["input_ids"], strict=False
+        ):  # type: ignore
             if length == context_length:
                 input_batch.append(input_ids)
         return {"input_ids": input_batch}
