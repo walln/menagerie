@@ -1,4 +1,5 @@
 """Tests for ResNet model."""
+
 from menagerie.resnet.model import ResNet18
 
 

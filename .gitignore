@@ -8,3 +8,9 @@ data
 wandb
 checkpoints
 TODO.md
+
+.env
+
+# Artifacts
+merged
+output

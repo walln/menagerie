@@ -1,6 +1,6 @@
 """Simple transformer model for pretraining."""
+
 import math
-from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -38,7 +38,7 @@ class Transformer(nn.Module):
         self.decoder = nn.Linear(hidden_dim, vocab_size)
 
     def forward(
-        self, inputs: Tensor, target: Tensor, mask: Optional[Tensor] = None
+        self, inputs: Tensor, target: Tensor, mask: Tensor | None = None
     ) -> Tensor:
         """Forward pass of the model."""
         _, t = inputs.shape
@@ -64,7 +64,7 @@ class Transformer(nn.Module):
 class PositionalEncoding(nn.Module):
     """Positional encoding."""
 
-    encoding: Optional[Tensor] = None
+    encoding: Tensor | None = None
 
     def __init__(self, dim: int, dropout: float, max_len: int = 5000):
         """Initialize the model."""

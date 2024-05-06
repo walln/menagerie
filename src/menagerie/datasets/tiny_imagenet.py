@@ -1,5 +1,4 @@
 """Tiny imagenet dataset [https://huggingface.co/datasets/zh-plus/tiny-imagenet]."""
-from typing import Dict
 
 import torch
 from menagerie.datasets.image_classification import create_standard_image_transforms
@@ -10,12 +9,12 @@ from datasets import load_dataset
 _image_transform = create_standard_image_transforms()
 
 
-def _filter(row: Dict):
+def _filter(row: dict):
     img = row["image"]
     return len(img.shape) == 3 and img.shape[2] == 3
 
 
-def _transform(row: Dict):
+def _transform(row: dict):
     row["image"] = [_image_transform(image=img)["image"] for img in row["image"]]
     return row
 

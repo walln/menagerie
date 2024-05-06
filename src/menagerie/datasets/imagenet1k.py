@@ -1,4 +1,5 @@
 """Imagenet1k Image Classification."""
+
 import logging
 from typing import Literal
 

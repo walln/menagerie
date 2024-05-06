@@ -1,4 +1,5 @@
 """Dataset utilities."""
+
 from menagerie.utils.console import progress_columns
 from rich.progress import Progress
 from torch.utils.data.dataloader import DataLoader
