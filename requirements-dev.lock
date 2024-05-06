@@ -8,6 +8,10 @@
 #   with-sources: false
 
 -e file:.
+accelerate==0.30.0
+    # via menagerie
+    # via peft
+    # via trl
 aiohttp==3.9.3
     # via datasets
     # via fsspec
@@ -15,6 +19,8 @@ aiosignal==1.3.1
     # via aiohttp
 albumentations==1.4.3
     # via menagerie
+annotated-types==0.6.0
+    # via pydantic
 anyio==4.3.0
     # via httpx
     # via jupyter-server
@@ -38,6 +44,8 @@ babel==2.14.0
     # via jupyterlab-server
 beautifulsoup4==4.12.3
     # via nbconvert
+bitsandbytes==0.43.1
+    # via menagerie
 bleach==6.1.0
     # via nbconvert
 cachetools==5.3.3
@@ -61,10 +69,13 @@ comm==0.2.2
     # via ipywidgets
 datasets==2.18.0
     # via menagerie
+    # via trl
 debugpy==1.8.1
     # via ipykernel
 decorator==5.1.1
     # via ipython
+deepspeed==0.14.2
+    # via menagerie
 defusedxml==0.7.1
     # via nbconvert
 dill==0.3.8
@@ -74,6 +85,8 @@ distlib==0.3.8
     # via virtualenv
 docker-pycreds==0.4.0
     # via wandb
+docstring-parser==0.16
+    # via tyro
 executing==2.0.1
     # via stack-data
 fastjsonschema==2.19.1
@@ -83,6 +96,7 @@ filelock==3.13.4
     # via huggingface-hub
     # via torch
     # via transformers
+    # via triton
     # via virtualenv
 fqdn==1.5.1
     # via jsonschema
@@ -101,12 +115,16 @@ gitpython==3.1.43
     # via wandb
 h11==0.14.0
     # via httpcore
+hjson==3.1.0
+    # via deepspeed
 httpcore==1.0.5
     # via httpx
 httpx==0.27.0
     # via jupyterlab
 huggingface-hub==0.22.2
+    # via accelerate
     # via datasets
+    # via peft
     # via tokenizers
     # via transformers
 identify==2.5.35
@@ -235,6 +253,8 @@ nest-asyncio==1.6.0
 networkx==3.3
     # via scikit-image
     # via torch
+ninja==1.11.1.1
+    # via deepspeed
 nodeenv==1.8.0
     # via pre-commit
 notebook==7.1.2
@@ -243,12 +263,16 @@ notebook-shim==0.2.4
     # via jupyterlab
     # via notebook
 numpy==1.26.4
+    # via accelerate
     # via albumentations
+    # via bitsandbytes
     # via datasets
+    # via deepspeed
     # via imageio
     # via lightning
     # via opencv-python-headless
     # via pandas
+    # via peft
     # via pyarrow
     # via pytorch-lightning
     # via scikit-image
@@ -258,6 +282,7 @@ numpy==1.26.4
     # via torchmetrics
     # via torchvision
     # via transformers
+    # via trl
 nvidia-cublas-cu12==12.1.3.1
     # via nvidia-cudnn-cu12
     # via nvidia-cusolver-cu12
@@ -294,7 +319,9 @@ opencv-python-headless==4.9.0.80
 overrides==7.7.0
     # via jupyter-server
 packaging==24.0
+    # via accelerate
     # via datasets
+    # via deepspeed
     # via huggingface-hub
     # via ipykernel
     # via jupyter-server
@@ -304,6 +331,7 @@ packaging==24.0
     # via lightning
     # via lightning-utilities
     # via nbconvert
+    # via peft
     # via pytest
     # via pytorch-lightning
     # via qtconsole
@@ -317,6 +345,8 @@ pandocfilters==1.5.1
     # via nbconvert
 parso==0.8.4
     # via jedi
+peft==0.10.0
+    # via menagerie
 pexpect==4.9.0
     # via ipython
 pillow==10.3.0
@@ -337,26 +367,37 @@ prompt-toolkit==3.0.43
 protobuf==4.25.3
     # via wandb
 psutil==5.9.8
+    # via accelerate
+    # via deepspeed
     # via ipykernel
     # via nvitop
+    # via peft
     # via wandb
 ptyprocess==0.7.0
     # via pexpect
     # via terminado
 pure-eval==0.2.2
     # via stack-data
+py-cpuinfo==9.0.0
+    # via deepspeed
 pyarrow==15.0.2
     # via datasets
 pyarrow-hotfix==0.6
     # via datasets
 pycparser==2.22
     # via cffi
+pydantic==2.7.1
+    # via deepspeed
+pydantic-core==2.18.2
+    # via pydantic
 pygments==2.17.2
     # via ipython
     # via jupyter-console
     # via nbconvert
     # via qtconsole
     # via rich
+pynvml==11.5.0
+    # via deepspeed
 pytest==8.1.1
 python-dateutil==2.9.0.post0
     # via arrow
@@ -369,11 +410,13 @@ pytorch-lightning==2.2.1
 pytz==2024.1
     # via pandas
 pyyaml==6.0.1
+    # via accelerate
     # via albumentations
     # via datasets
     # via huggingface-hub
     # via jupyter-events
     # via lightning
+    # via peft
     # via pre-commit
     # via pytorch-lightning
     # via transformers
@@ -409,10 +452,13 @@ rfc3986-validator==0.1.1
 rich==13.7.1
     # via menagerie
     # via typer
+    # via tyro
 rpds-py==0.18.0
     # via jsonschema
     # via referencing
 safetensors==0.4.2
+    # via accelerate
+    # via peft
     # via transformers
 scikit-image==0.23.1
     # via albumentations
@@ -434,6 +480,8 @@ setuptools==69.2.0
     # via wandb
 shellingham==1.5.4
     # via typer
+shtab==1.7.1
+    # via tyro
 six==1.16.0
     # via asttokens
     # via bleach
@@ -462,14 +510,19 @@ tifffile==2024.2.12
     # via scikit-image
 tinycss2==1.2.1
     # via nbconvert
-tokenizers==0.15.2
+tokenizers==0.19.1
     # via transformers
 torch==2.2.2
+    # via accelerate
+    # via bitsandbytes
+    # via deepspeed
     # via lightning
     # via menagerie
+    # via peft
     # via pytorch-lightning
     # via torchmetrics
     # via torchvision
+    # via trl
 torchmetrics==1.3.2
     # via lightning
     # via menagerie
@@ -485,8 +538,10 @@ tornado==6.4
     # via terminado
 tqdm==4.66.2
     # via datasets
+    # via deepspeed
     # via huggingface-hub
     # via lightning
+    # via peft
     # via pytorch-lightning
     # via transformers
 traitlets==5.14.2
@@ -505,7 +560,13 @@ traitlets==5.14.2
     # via nbconvert
     # via nbformat
     # via qtconsole
-transformers==4.39.3
+transformers==4.40.1
+    # via menagerie
+    # via peft
+    # via trl
+triton==2.3.0
+    # via menagerie
+trl==0.8.6
     # via menagerie
 typer==0.12.3
     # via menagerie
@@ -516,9 +577,14 @@ typing-extensions==4.11.0
     # via huggingface-hub
     # via lightning
     # via lightning-utilities
+    # via pydantic
+    # via pydantic-core
     # via pytorch-lightning
     # via torch
     # via typer
+    # via tyro
+tyro==0.8.3
+    # via trl
 tzdata==2024.1
     # via pandas
 uri-template==1.3.0

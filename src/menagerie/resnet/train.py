@@ -6,7 +6,6 @@ from typing import Annotated
 
 import torch
 import typer
-import wandb
 from lightning import Fabric, seed_everything
 from rich.progress import Progress
 from torch.nn.functional import cross_entropy
@@ -15,6 +14,7 @@ from torch.optim.lr_scheduler import LRScheduler, OneCycleLR
 from torch.utils.data.dataloader import DataLoader
 from torchmetrics import Accuracy
 
+import wandb
 from menagerie.datasets.tiny_imagenet import (
     create_train_dataset,
     create_validation_dataset,

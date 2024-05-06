@@ -6,7 +6,6 @@ from typing import Annotated
 import torch
 import torch.nn.functional as F
 import typer
-import wandb
 from lightning import Fabric, seed_everything
 from menagerie.datasets.code_parrot import create_datasets
 from menagerie.transfomer_pretrain.model import Transformer
@@ -15,6 +14,8 @@ from rich.progress import Progress
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LRScheduler, OneCycleLR
 from torch.utils.data.dataloader import DataLoader
+
+import wandb
 
 num_workers = 1
 
