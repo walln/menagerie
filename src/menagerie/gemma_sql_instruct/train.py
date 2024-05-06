@@ -17,7 +17,7 @@ train_dataset, _ = create_dataset(12500, 2500)
 
 wandb.init(project="gemma-2b-finetune")
 
-model_id = "google/gemma-2b"
+model_id = "abideen/gemma-2b-openhermes"  # Use gemma tuned for chat on openhermes (may just do myself in 2 phase tuning)
 
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
@@ -37,7 +37,6 @@ tokenizer.padding_side = "right"
 
 # Ensure the model can handle chatml format
 model, tokenizer = setup_chat_format(model, tokenizer)  # type: ignore PreTrainedTokenizerFast also valid
-
 
 peft_config = LoraConfig(
     lora_alpha=128,

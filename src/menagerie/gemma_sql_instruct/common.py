@@ -54,6 +54,8 @@ def create_dataset(dataset_size: int = 4000, test_split_size: int = 1000):
     )
     dataset = dataset.train_test_split(test_size=test_split_size / dataset_size)
 
+    # interleave_datasets() is used to combine the training and test datasets
+
     train_dataset = dataset["train"]
     test_dataset = dataset["test"]
 
