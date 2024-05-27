@@ -8,7 +8,7 @@ authors = [
 dependencies = [
     "torch>=2.2.2",
     "torchvision>=0.17.2",
-    "datasets>=2.18.0",
+    "datasets>=2.19.1",
     "rich>=13.7.1",
     "lightning>=2.2.1",
     "torchmetrics>=1.3.2",
@@ -22,6 +22,7 @@ dependencies = [
     "deepspeed>=0.14.2",
     "bitsandbytes>=0.43.1",
     "triton>=2.3.0",
+    "einops>=0.8.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.12"

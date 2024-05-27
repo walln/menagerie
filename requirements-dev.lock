@@ -67,7 +67,7 @@ click==8.1.7
 comm==0.2.2
     # via ipykernel
     # via ipywidgets
-datasets==2.18.0
+datasets==2.19.1
     # via menagerie
     # via trl
 debugpy==1.8.1
@@ -87,6 +87,8 @@ docker-pycreds==0.4.0
     # via wandb
 docstring-parser==0.16
     # via tyro
+einops==0.8.0
+    # via menagerie
 executing==2.0.1
     # via stack-data
 fastjsonschema==2.19.1

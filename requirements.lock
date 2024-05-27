@@ -35,7 +35,7 @@ charset-normalizer==3.3.2
 click==8.1.7
     # via typer
     # via wandb
-datasets==2.18.0
+datasets==2.19.1
     # via menagerie
     # via trl
 deepspeed==0.14.2
@@ -47,6 +47,8 @@ docker-pycreds==0.4.0
     # via wandb
 docstring-parser==0.16
     # via tyro
+einops==0.8.0
+    # via menagerie
 filelock==3.13.4
     # via datasets
     # via huggingface-hub
